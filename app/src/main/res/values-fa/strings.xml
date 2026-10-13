@@ -460,4 +460,9 @@
     <string name="auto_sync_backup">همگام‌سازی خودکار بکاپ</string>
     <string name="auto_sync_backup_desc">با تغییر پلی‌لیست‌ها یا متن‌ها، فایل بکاپ به طور خودکار بروزرسانی میشه</string>
     <string name="auto_sync_requires_export">واسه فعال کردن این بخش، اول باید یه خروجی بگیری</string>
+    <string name="card_playlists">استفاده از لیست‌های پخش کارت</string>
+    <string name="card_playlists_desc">به‌جای لیست‌های پخش Lune از فایل‌های .m3u یک پوشه (مانند پوشه Playlists کارت) استفاده می‌کند. فقط خواندنی: آن‌ها را در رایانه ویرایش کنید. لیست‌های پخش Lune حفظ می‌شوند و با خاموش کردن این گزینه برمی‌گردند.</string>
+    <string name="card_playlists_folder">پوشه لیست‌های پخش</string>
+    <string name="card_playlists_folder_none">پوشه‌ای انتخاب نشده</string>
+    <string name="card_playlists_empty">هیچ لیست پخش .m3u در پوشه انتخاب‌شده یافت نشد</string>
 </resources>

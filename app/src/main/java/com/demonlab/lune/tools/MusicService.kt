@@ -622,7 +622,7 @@ class MusicService : MediaLibraryService() {
                             }
                         }
                         "playlists" -> {
-                            val playlists = db.playlistDao().getAllPlaylists()
+                            val playlists = db.playlistDao().getPlaylists(external = settingsManager.useCardPlaylists)
                             for (playlist in playlists) {
                                 mediaItems.add(createBrowsableItem("playlist_${playlist.id}", playlist.name))
                             }

@@ -464,4 +464,9 @@
     <string name="auto_sync_backup">Sauvegarde synchronisée automatiquement</string>
     <string name="auto_sync_backup_desc">Met à jour automatiquement la sauvegarde exportée lors de modifications</string>
     <string name="auto_sync_requires_export">Exportez d\'abord une sauvegarde pour activer la synchronisation automatique</string>
+    <string name="card_playlists">Utiliser les playlists de la carte</string>
+    <string name="card_playlists_desc">Utilise les fichiers .m3u d\'un dossier (comme le dossier Playlists de la carte) au lieu des playlists de Lune. Lecture seule : modifiez-les sur un ordinateur. Les playlists de Lune sont conservées et reviennent lorsque cette option est désactivée.</string>
+    <string name="card_playlists_folder">Dossier des playlists</string>
+    <string name="card_playlists_folder_none">Aucun dossier sélectionné</string>
+    <string name="card_playlists_empty">Aucune playlist .m3u trouvée dans le dossier sélectionné</string>
 </resources>

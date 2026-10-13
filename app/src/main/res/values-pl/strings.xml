@@ -482,4 +482,9 @@
     <string name="auto_sync_backup">Automatyczna synchronizacja kopii</string>
     <string name="auto_sync_backup_desc">Automatycznie aktualizuj wyeksportowaną kopię zapasową, gdy zmieniają się playlisty lub teksty utworów</string>
     <string name="auto_sync_requires_export">Najpierw wyeksportuj kopię zapasową, aby włączyć automatyczną synchronizację</string>
+    <string name="card_playlists">Użyj playlist z karty</string>
+    <string name="card_playlists_desc">Używa plików .m3u z folderu (np. folderu Playlists na karcie) zamiast playlist Lune. Tylko do odczytu: edytuj je na komputerze. Własne playlisty Lune zostają zachowane i wrócą po wyłączeniu.</string>
+    <string name="card_playlists_folder">Folder playlist</string>
+    <string name="card_playlists_folder_none">Nie wybrano folderu</string>
+    <string name="card_playlists_empty">Nie znaleziono playlist .m3u w wybranym folderze</string>
 </resources>

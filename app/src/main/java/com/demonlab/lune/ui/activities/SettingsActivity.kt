@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 import com.demonlab.lune.tools.PlaylistBackupManager
 import com.demonlab.lune.tools.MusicProvider
 import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
@@ -149,6 +150,38 @@ fun SettingsScreen(
                 }
             }
         }
+    }
+
+    var useCardPlaylists by remember { mutableStateOf(settingsManager.useCardPlaylists) }
+    var cardPlaylistsFolderUri by remember { mutableStateOf(settingsManager.cardPlaylistsFolderUri) }
+    // Turning the card playlists on with no folder yet asks for one first, and
+    // turns them on once it is picked.
+    var enableCardPlaylistsAfterPick by remember { mutableStateOf(false) }
+
+    val cardFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: Exception) {}
+            val previous = settingsManager.cardPlaylistsFolderUri
+            if (previous != null && previous != uri.toString() && previous != settingsManager.musicFolderUri) {
+                try {
+                    context.contentResolver.releasePersistableUriPermission(
+                        android.net.Uri.parse(previous),
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
+            }
+            settingsManager.cardPlaylistsFolderUri = uri.toString()
+            cardPlaylistsFolderUri = uri.toString()
+            if (enableCardPlaylistsAfterPick) {
+                settingsManager.useCardPlaylists = true
+                useCardPlaylists = true
+            }
+        }
+        enableCardPlaylistsAfterPick = false
     }
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -395,6 +428,49 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Backup Section
+                // Playlists Section
+                SettingsSection(title = stringResource(R.string.playlists)) {
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.card_playlists),
+                        supportingText = stringResource(R.string.card_playlists_desc),
+                        icon = Icons.Default.SdCard,
+                        position = SectionPosition.FIRST,
+                        trailingContent = {
+                            BouncySwitch(
+                                checked = useCardPlaylists,
+                                onCheckedChange = { enabled ->
+                                    if (enabled && cardPlaylistsFolderUri.isNullOrBlank()) {
+                                        enableCardPlaylistsAfterPick = true
+                                        cardFolderLauncher.launch(null)
+                                    } else {
+                                        useCardPlaylists = enabled
+                                        settingsManager.useCardPlaylists = enabled
+                                    }
+                                },
+                                thumbContent = {
+                                    Icon(
+                                        imageVector = if (useCardPlaylists) Icons.Default.Check else Icons.Default.Close,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    )
+                    SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.card_playlists_folder),
+                        supportingText = cardPlaylistsFolderUri
+                            ?.let { runCatching { android.provider.DocumentsContract.getTreeDocumentId(android.net.Uri.parse(it)) }.getOrNull() }
+                            ?.replace(":", "/")?.removePrefix("primary/")
+                            ?: stringResource(R.string.card_playlists_folder_none),
+                        icon = Icons.Default.Folder,
+                        position = SectionPosition.LAST,
+                        onClick = { cardFolderLauncher.launch(null) }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 SettingsSection(title = stringResource(R.string.backup)) {
                     if (showBackupWarning) {
                         BackupWarningCard(

@@ -464,4 +464,9 @@
     <string name="auto_sync_backup">Автосинхронизация резервной копии</string>
     <string name="auto_sync_backup_desc">Автоматически обновлять экспортированную копию при изменении плейлистов или текстов</string>
     <string name="auto_sync_requires_export">Сначала экспортируйте резервную копию для включения автосинхронизации</string>
+    <string name="card_playlists">Плейлисты с карты памяти</string>
+    <string name="card_playlists_desc">Использовать файлы .m3u из папки (например, папки Playlists на карте) вместо плейлистов Lune. Только чтение: редактируйте их на компьютере. Собственные плейлисты Lune сохраняются и вернутся после отключения.</string>
+    <string name="card_playlists_folder">Папка плейлистов</string>
+    <string name="card_playlists_folder_none">Папка не выбрана</string>
+    <string name="card_playlists_empty">В выбранной папке нет плейлистов .m3u</string>
 </resources>

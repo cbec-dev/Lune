@@ -484,4 +484,9 @@
     <string name="auto_sync_requires_export">Export a backup first to enable auto-sync</string>
     <string name="show_headers">Show section headers</string>
     <string name="hide_headers">Hide section headers</string>
+    <string name="card_playlists">Use card playlists</string>
+    <string name="card_playlists_desc">Use the .m3u files in a folder (like the card\'s Playlists folder) instead of Lune\'s playlists. Read only: edit them on a computer. Lune\'s own playlists are kept and come back when this is off.</string>
+    <string name="card_playlists_folder">Playlists folder</string>
+    <string name="card_playlists_folder_none">No folder selected</string>
+    <string name="card_playlists_empty">No .m3u playlists found in the selected folder</string>
 </resources>

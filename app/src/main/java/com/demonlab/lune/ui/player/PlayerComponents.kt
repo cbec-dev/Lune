@@ -1260,26 +1260,29 @@ fun FullPlayer(
                         .padding(bottom = if (isLandscape) 8.dp else 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Add to Playlist button: Material 3 Expressive rounded square container
-                    Surface(
-                        onClick = { showAddToPlaylistInPlayer = true },
-                        shape = RoundedCornerShape(14.dp),
-                        color = topBarBtnBg,
-                        modifier = Modifier
-                            .size(46.dp)
-                            .bounceClick()
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
-                                contentDescription = stringResource(R.string.add_to_playlist),
-                                tint = topBarBtnTint,
-                                modifier = Modifier.size(24.dp)
-                            )
+                    // Add to Playlist button: Material 3 Expressive rounded square container.
+                    // Not over the card folder's playlists, which are read only.
+                    if (!settingsManager.useCardPlaylists) {
+                        Surface(
+                            onClick = { showAddToPlaylistInPlayer = true },
+                            shape = RoundedCornerShape(14.dp),
+                            color = topBarBtnBg,
+                            modifier = Modifier
+                                .size(46.dp)
+                                .bounceClick()
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                    contentDescription = stringResource(R.string.add_to_playlist),
+                                    tint = topBarBtnTint,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
+                    }
 
                     // Animated Playing From "x" text: aligned to the right of the back button, WITHOUT container/background
                     Box(
@@ -1976,7 +1979,7 @@ fun FullPlayer(
                                                 val eqIntent = android.content.Intent(context, com.demonlab.lune.ui.activities.EqualizerActivity::class.java)
                                                 context.startActivity(eqIntent)
                                             }
-                                            3 -> showAddToPlaylistInPlayer = true
+                                            3 -> if (!settingsManager.useCardPlaylists) showAddToPlaylistInPlayer = true
                                             4 -> {
                                                 try {
                                                     val file = File(song.path)
@@ -2074,7 +2077,7 @@ fun FullPlayer(
                 onDismiss = { showOptionsSheet = false },
                 onAddToPlaylistClick = {
                     showOptionsSheet = false
-                    showAddToPlaylistInPlayer = true
+                    showAddToPlaylistInPlayer = !settingsManager.useCardPlaylists
                 },
                 onShowVisualizerSettings = {
                     showOptionsSheet = false
@@ -2087,7 +2090,7 @@ fun FullPlayer(
             )
         }
 
-        if (showAddToPlaylistInPlayer) {
+        if (showAddToPlaylistInPlayer && !settingsManager.useCardPlaylists) {
             val currentSongState = playbackManager.currentSong
             if (currentSongState != null) {
                 val musicViewModel: MusicViewModel = viewModel()

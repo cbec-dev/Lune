@@ -17,6 +17,7 @@ import com.demonlab.lune.tools.MusicProvider
 import com.demonlab.lune.tools.Song
 import com.demonlab.lune.tools.SettingsManager
 import com.demonlab.lune.tools.MetadataManager
+import com.demonlab.lune.tools.playlist.CardPlaylistSync
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -46,6 +47,8 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             }
             if (cached.isNotEmpty() && allSongs.isEmpty()) {
                 allSongs = cached
+                // The card playlists may have been resolved against no library yet.
+                if (isPlaylistsReadOnly) awaitLoadPlaylists()
             } else if (allSongs.isEmpty()) {
                 isLoading = true
             }
@@ -61,6 +64,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val refreshed = musicProvider.refreshLibrary()
             if (refreshed.isNotEmpty()) {
                 allSongs = refreshed
+                if (isPlaylistsReadOnly) awaitLoadPlaylists()
             }
             isLoading = false
         }
@@ -99,6 +103,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             
             if (synced != allSongs) {
                 allSongs = synced
+                // The card playlists name files, and are resolved to the library's
+                // tracks: a different library can mean different tracks.
+                if (isPlaylistsReadOnly) awaitLoadPlaylists()
             }
         } else {
             // If sync returned empty but we already had songs, don't clear the list.
@@ -184,18 +191,19 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     var topArtistStats by mutableStateOf<List<com.demonlab.lune.data.PlaybackStats>>(emptyList())
         private set
 
+    // While the card playlists folder is in use the playlists are its .m3u files,
+    // which are read only: every edit below refuses, and the UI hides its controls.
+    val isPlaylistsReadOnly: Boolean
+        get() = SettingsManager.getInstance(getApplication()).useCardPlaylists
+
     fun loadPlaylists() {
         viewModelScope.launch {
-            val (newPlaylists, newMappings) = withContext(Dispatchers.IO) {
-                val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
-                Pair(db.playlistDao().getAllPlaylists(), db.playlistDao().getAllPlaylistMappings())
-            }
-            playlists = newPlaylists
-            playlistMappings = newMappings
+            awaitLoadPlaylists()
         }
     }
 
     fun createPlaylist(name: String) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().insertPlaylist(
@@ -212,15 +220,19 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun awaitLoadPlaylists() {
+        val external = isPlaylistsReadOnly
+        val songs = allSongs
         val (newPlaylists, newMappings) = withContext(Dispatchers.IO) {
+            if (external) CardPlaylistSync.sync(getApplication(), songs)
             val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
-            Pair(db.playlistDao().getAllPlaylists(), db.playlistDao().getAllPlaylistMappings())
+            Pair(db.playlistDao().getPlaylists(external), db.playlistDao().getPlaylistMappings(external))
         }
         playlists = newPlaylists
         playlistMappings = newMappings
     }
 
     fun addSongToPlaylist(playlistId: Long, songId: Long, onComplete: (() -> Unit)? = null) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val db = MusicDatabase.getDatabase(getApplication())
@@ -236,6 +248,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addSongsToPlaylist(playlistId: Long, songIds: List<Long>, onComplete: (() -> Unit)? = null) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val db = MusicDatabase.getDatabase(getApplication())
@@ -252,6 +265,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun reorderPlaylist(playlistId: Long, fromIndex: Int, toIndex: Int) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val db = MusicDatabase.getDatabase(getApplication())
@@ -272,6 +286,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun savePlaylistOrder(playlistId: Long, orderedSongIds: List<Long>) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val db = MusicDatabase.getDatabase(getApplication())
@@ -291,6 +306,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun removeSongsFromPlaylist(playlistId: Long, songIds: List<Long>, onComplete: (() -> Unit)? = null) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
@@ -303,6 +319,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun removeSongFromPlaylist(playlistId: Long, songId: Long, onComplete: (() -> Unit)? = null) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().removeSongFromPlaylist(playlistId, songId)
@@ -316,8 +333,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun getPlaylistsContainingSong(songId: Long, callback: (List<Long>) -> Unit) {
         viewModelScope.launch {
             // This is a bit inefficient but works for now: check all playlists
+            val external = isPlaylistsReadOnly
             val all = withContext(Dispatchers.IO) {
-                com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getAllPlaylists()
+                com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getPlaylists(external)
             }
             val matches = mutableListOf<Long>()
             for (p in all) {
@@ -337,7 +355,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
             val ids = withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().getSongIdsForPlaylist(playlistId)
             }
-            callback(allSongs.filter { it.id in ids })
+            // In the playlist's order, not the library's.
+            val songMap = allSongs.associateBy { it.id }
+            callback(ids.mapNotNull { songMap[it] })
         }
     }
 
@@ -350,6 +370,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deletePlaylist(playlist: com.demonlab.lune.data.Playlist, onComplete: (() -> Unit)? = null) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication()).playlistDao().deletePlaylist(playlist)
@@ -361,10 +382,11 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun renamePlaylist(playlistId: Long, newName: String, onComplete: (() -> Unit)? = null) {
+        if (isPlaylistsReadOnly) return
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 val db = com.demonlab.lune.data.MusicDatabase.getDatabase(getApplication())
-                val playlist = db.playlistDao().getAllPlaylists().find { it.id == playlistId }
+                val playlist = db.playlistDao().getPlaylistById(playlistId)
                 if (playlist != null) {
                     db.playlistDao().updatePlaylist(playlist.copy(name = newName))
                 }

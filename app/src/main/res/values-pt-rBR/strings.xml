@@ -464,4 +464,9 @@
     <string name="auto_sync_backup">Sincronização automática do backup</string>
     <string name="auto_sync_backup_desc">Atualiza automaticamente o backup exportado quando playlists ou letras mudarem</string>
     <string name="auto_sync_requires_export">Exporte um backup primeiro para ativar a sincronização automática</string>
+    <string name="card_playlists">Usar playlists do cartão</string>
+    <string name="card_playlists_desc">Usa os arquivos .m3u de uma pasta (como a pasta Playlists do cartão) em vez das playlists do Lune. Somente leitura: edite-os em um computador. As playlists do Lune são mantidas e voltam quando isto é desativado.</string>
+    <string name="card_playlists_folder">Pasta de playlists</string>
+    <string name="card_playlists_folder_none">Nenhuma pasta selecionada</string>
+    <string name="card_playlists_empty">Nenhuma playlist .m3u encontrada na pasta selecionada</string>
 </resources>

@@ -276,19 +276,22 @@ fun PlaylistListScreen(
                         }
                     }
 
-                    Surface(
-                        onClick = { showCreateDialog = true },
-                        shape = RoundedCornerShape(14.dp),
-                        color = actionBtnBg,
-                        modifier = Modifier.size(44.dp).bounceClick()
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = stringResource(R.string.create_playlist),
-                                tint = actionBtnTint,
-                                modifier = Modifier.size(22.dp)
-                            )
+                    // The card folder's playlists are made on a computer.
+                    if (!viewModel.isPlaylistsReadOnly) {
+                        Surface(
+                            onClick = { showCreateDialog = true },
+                            shape = RoundedCornerShape(14.dp),
+                            color = actionBtnBg,
+                            modifier = Modifier.size(44.dp).bounceClick()
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = stringResource(R.string.create_playlist),
+                                    tint = actionBtnTint,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         }
                     }
 
@@ -321,6 +324,18 @@ fun PlaylistListScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
         
+        if (sortedPlaylists.isEmpty() && viewModel.isPlaylistsReadOnly) {
+            item(key = "card_playlists_empty") {
+                Text(
+                    text = stringResource(R.string.card_playlists_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (hasBlurBackground) Color.White.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 48.dp)
+                )
+            }
+        }
+
         itemsIndexed(sortedPlaylists, key = { _, it -> it.id }) { index, playlist ->
             PlaylistCard(
                 playlist = playlist,
@@ -329,7 +344,8 @@ fun PlaylistListScreen(
                 hasBlurBackground = hasBlurBackground,
                 onPlaylistClick = onPlaylistClick,
                 onPlayPlaylist = onPlayPlaylist,
-                onLongClick = { selectedOptionsPlaylist = playlist }
+                // Rename and delete: not for the card folder's, which are read only.
+                onLongClick = { if (!viewModel.isPlaylistsReadOnly) selectedOptionsPlaylist = playlist }
             )
         }
     }

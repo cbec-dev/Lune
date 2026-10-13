@@ -96,7 +96,9 @@ fun PlaylistDetailView(
         playbackManager.getSortedList(songs, sortOption, isSortAscending)
     }
 
-    val isCustomOrder = sortOption == "CUSTOM"
+    // Custom order is the file's for a card folder playlist, which is read only:
+    // shown in that order, but not dragged.
+    val isCustomOrder = sortOption == "CUSTOM" && !viewModel.isPlaylistsReadOnly
     var currentPlaylistSongs by remember(sortedSongs) { mutableStateOf(sortedSongs) }
     LaunchedEffect(sortedSongs) {
         currentPlaylistSongs = sortedSongs
@@ -353,8 +355,9 @@ fun PlaylistDetailView(
                             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // 1. Botón de 3 puntos a la izquierda
-                            Surface(
+                            // 1. Botón de 3 puntos a la izquierda (no para las playlists
+                            // de la tarjeta, que son de solo lectura)
+                            if (!viewModel.isPlaylistsReadOnly) Surface(
                                 onClick = { showPlaylistOptions = true },
                                 shape = RoundedCornerShape(14.dp),
                                 color = actionBtnInactiveBg,

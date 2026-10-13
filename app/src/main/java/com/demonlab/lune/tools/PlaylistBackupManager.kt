@@ -49,7 +49,7 @@ class PlaylistBackupManager(private val context: Context) {
 
             val exportData = PlaylistExportData(
                 version = 2,
-                playlists = dao.getAllPlaylists().map { playlist ->
+                playlists = dao.getPlaylists(external = false).map { playlist ->
                     PlaylistData(
                         name = playlist.name,
                         songs = dao.getSongIdsForPlaylist(playlist.id).mapNotNull { id ->

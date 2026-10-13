@@ -410,6 +410,27 @@ class SettingsManager(context: Context) {
         get() = prefs.getString("auto_sync_backup_uri", null)
         set(value) = prefs.edit().putString("auto_sync_backup_uri", value).apply()
 
+    // Use the .m3u files in a picked folder (usually <card>/Playlists) as the
+    // playlists, read only, instead of Lune's own. Lune's own are kept as they are
+    // and come back when this is turned off. See CardPlaylistSync.
+    private val _useCardPlaylists = mutableStateOf(prefs.getBoolean("use_card_playlists", false))
+    var useCardPlaylists: Boolean
+        get() = _useCardPlaylists.value
+        set(value) {
+            _useCardPlaylists.value = value
+            prefs.edit().putBoolean("use_card_playlists", value).apply()
+        }
+
+    var cardPlaylistsFolderUri: String?
+        get() = prefs.getString("card_playlists_folder_uri", null)
+        set(value) = prefs.edit().putString("card_playlists_folder_uri", value).apply()
+
+    // The library the card playlists were last resolved against; a different one
+    // means every file is read again.
+    var cardPlaylistsLibraryFingerprint: String?
+        get() = prefs.getString("card_playlists_library_fingerprint", null)
+        set(value) = prefs.edit().putString("card_playlists_library_fingerprint", value).apply()
+
     var useAmoledPitchBlack: Boolean
         get() = prefs.getBoolean("use_amoled_pitch_black", false)
         set(value) = prefs.edit().putBoolean("use_amoled_pitch_black", value).apply()

@@ -17,7 +17,13 @@ data class SongOverride(
 data class Playlist(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    // Set for a playlist mirrored from an .m3u file in the card playlists folder
+    // (the file's document URI); null for Lune's own playlists. The two sets are
+    // never shown together, see SettingsManager.useCardPlaylists.
+    val sourceUri: String? = null,
+    @ColumnInfo(defaultValue = "0") val sourceLastModified: Long = 0,
+    @ColumnInfo(defaultValue = "0") val sourceSize: Long = 0
 )
 
 @Entity(
@@ -59,16 +65,22 @@ interface SongOverrideDao {
 
 @Dao
 interface PlaylistDao {
-    @Query("SELECT * FROM playlists ORDER BY createdAt DESC")
-    suspend fun getAllPlaylists(): List<Playlist>
+    @Query("SELECT * FROM playlists WHERE (sourceUri IS NOT NULL) = :external ORDER BY createdAt DESC")
+    suspend fun getPlaylists(external: Boolean): List<Playlist>
 
-    @Query("SELECT * FROM playlist_songs")
-    suspend fun getAllPlaylistMappings(): List<PlaylistSong>
+    @Query("SELECT playlist_songs.* FROM playlist_songs INNER JOIN playlists ON playlists.id = playlist_songs.playlistId WHERE (playlists.sourceUri IS NOT NULL) = :external")
+    suspend fun getPlaylistMappings(external: Boolean): List<PlaylistSong>
+
+    @Query("SELECT * FROM playlists WHERE sourceUri IS NOT NULL")
+    suspend fun getExternalPlaylists(): List<Playlist>
+
+    @Query("DELETE FROM playlist_songs WHERE playlistId = :playlistId")
+    suspend fun deleteSongsForPlaylist(playlistId: Long)
 
     @Query("SELECT * FROM playlists WHERE id = :playlistId")
     suspend fun getPlaylistById(playlistId: Long): Playlist?
 
-    @Query("SELECT * FROM playlists WHERE name = :name LIMIT 1")
+    @Query("SELECT * FROM playlists WHERE name = :name AND sourceUri IS NULL LIMIT 1")
     suspend fun getPlaylistByName(name: String): Playlist?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -103,8 +115,8 @@ interface PlaylistDao {
     @Query("SELECT MAX(position) FROM playlist_songs WHERE playlistId = :playlistId")
     suspend fun getMaxPosition(playlistId: Long): Int?
 
-    @Query("SELECT COUNT(*) FROM playlist_songs WHERE songId = :songId")
-    suspend fun getPlaylistCountForSong(songId: Long): Int
+    @Query("SELECT COUNT(*) FROM playlist_songs INNER JOIN playlists ON playlists.id = playlist_songs.playlistId WHERE playlist_songs.songId = :songId AND (playlists.sourceUri IS NOT NULL) = :external")
+    suspend fun getPlaylistCountForSong(songId: Long, external: Boolean): Int
 }
 
 @Entity(tableName = "playback_stats")
@@ -133,10 +145,11 @@ interface PlaybackStatsDao {
 
 @Database(
     entities = [SongOverride::class, Playlist::class, PlaylistSong::class, PlaybackStats::class],
-    version = 7,
+    version = 8,
     autoMigrations = [
         AutoMigration(from = 5, to = 6),
-        AutoMigration(from = 6, to = 7)
+        AutoMigration(from = 6, to = 7),
+        AutoMigration(from = 7, to = 8)
     ],
     exportSchema = true
 )

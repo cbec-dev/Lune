@@ -90,6 +90,8 @@ fun SongOptionsBottomSheet(
     val isPlayingOrLoaded = playbackManager.currentSong != null
     val targetSong = playbackManager.currentSong ?: song
     val blurColors = rememberBlurSheetColors(targetSong)
+    // The card folder's playlists are read only: nothing to add a song to.
+    val canAddToPlaylist = !SettingsManager.getInstance(context).useCardPlaylists
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -191,39 +193,41 @@ fun SongOptionsBottomSheet(
                     }
                 }
 
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 1.dp)
-                        .bounceClick(),
-                    shape = if (isPlayingOrLoaded) RoundedCornerShape(4.dp) else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
-                    color = blurColors.itemContainerColor,
-                    border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
-                ) {
-                    ListItem(
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        leadingContent = {
-                            Surface(
-                                shape = CircleShape,
-                                color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
-                                modifier = Modifier.size(40.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.PlaylistAdd,
-                                        contentDescription = null,
-                                        tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                }
-                            }
-                        },
-                        modifier = Modifier.clickable {
-                            onDismiss()
-                            onAddToPlaylistClick()
-                        }
+                if (canAddToPlaylist) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 1.dp)
+                            .bounceClick(),
+                        shape = if (isPlayingOrLoaded) RoundedCornerShape(4.dp) else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp),
+                        color = blurColors.itemContainerColor,
+                        border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
                     ) {
-                        Text(stringResource(R.string.add_to_playlist), color = blurColors.textColor)
+                        ListItem(
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            leadingContent = {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = if (blurColors.hasBlur) blurColors.primaryTint.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primaryContainer,
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            Icons.AutoMirrored.Filled.PlaylistAdd,
+                                            contentDescription = null,
+                                            tint = if (blurColors.hasBlur) blurColors.primaryTint else MaterialTheme.colorScheme.onPrimaryContainer,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            },
+                            modifier = Modifier.clickable {
+                                onDismiss()
+                                onAddToPlaylistClick()
+                            }
+                        ) {
+                            Text(stringResource(R.string.add_to_playlist), color = blurColors.textColor)
+                        }
                     }
                 }
                 Surface(
@@ -231,7 +235,7 @@ fun SongOptionsBottomSheet(
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 1.dp)
                         .bounceClick(),
-                    shape = RoundedCornerShape(4.dp),
+                    shape = if (!canAddToPlaylist && !isPlayingOrLoaded) RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp, bottomStart = 4.dp, bottomEnd = 4.dp) else RoundedCornerShape(4.dp),
                     color = blurColors.itemContainerColor,
                     border = blurColors.itemBorderColor?.let { BorderStroke(1.dp, it) }
                 ) {

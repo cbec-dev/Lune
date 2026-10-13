@@ -462,4 +462,9 @@
     <string name="auto_sync_backup">مزامنة النسخ الاحتياطي تلقائياً</string>
     <string name="auto_sync_backup_desc">تحديث النسخة الاحتياطية المصدرة تلقائياً عند تغيير القوائم أو الكلمات</string>
     <string name="auto_sync_requires_export">قم بتصدير نسخة احتياطية أولاً لتفعيل المزامنة التلقائية</string>
+    <string name="card_playlists">استخدام قوائم تشغيل البطاقة</string>
+    <string name="card_playlists_desc">استخدام ملفات .m3u من مجلد (مثل مجلد Playlists في البطاقة) بدلاً من قوائم تشغيل Lune. للقراءة فقط: عدّلها على الحاسوب. تُحفظ قوائم تشغيل Lune وتعود عند إيقاف هذا الخيار.</string>
+    <string name="card_playlists_folder">مجلد قوائم التشغيل</string>
+    <string name="card_playlists_folder_none">لم يتم اختيار مجلد</string>
+    <string name="card_playlists_empty">لم يتم العثور على قوائم تشغيل .m3u في المجلد المحدد</string>
 </resources>

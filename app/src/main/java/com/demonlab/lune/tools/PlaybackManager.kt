@@ -1465,7 +1465,7 @@ class PlaybackManager private constructor(private val context: Context) {
     fun checkPlaylistStatus() {
         val songId = currentSong?.id ?: return
         kotlinx.coroutines.MainScope().launch {
-            val count = com.demonlab.lune.data.MusicDatabase.getDatabase(context).playlistDao().getPlaylistCountForSong(songId)
+            val count = com.demonlab.lune.data.MusicDatabase.getDatabase(context).playlistDao().getPlaylistCountForSong(songId, external = SettingsManager.getInstance(context).useCardPlaylists)
             isInAnyPlaylist = count > 0
         }
     }

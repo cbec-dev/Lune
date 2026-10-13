@@ -461,4 +461,9 @@
     <string name="auto_sync_backup">自动同步备份</string>
     <string name="auto_sync_backup_desc">播放列表或歌词更改时自动更新已导出的备份</string>
     <string name="auto_sync_requires_export">请先导出备份以启用自动同步</string>
+    <string name="card_playlists">使用存储卡播放列表</string>
+    <string name="card_playlists_desc">使用文件夹中的 .m3u 文件（例如存储卡的 Playlists 文件夹）代替 Lune 的播放列表。只读：请在电脑上编辑。Lune 自己的播放列表会被保留，关闭后恢复。</string>
+    <string name="card_playlists_folder">播放列表文件夹</string>
+    <string name="card_playlists_folder_none">未选择文件夹</string>
+    <string name="card_playlists_empty">所选文件夹中没有 .m3u 播放列表</string>
 </resources>

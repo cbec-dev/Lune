@@ -485,4 +485,9 @@
     <string name="auto_sync_requires_export">Exporta un respaldo primero para activar la sincronización</string>
     <string name="show_headers">Mostrar encabezados de sección</string>
     <string name="hide_headers">Ocultar encabezados de sección</string>
+    <string name="card_playlists">Usar playlists de la tarjeta</string>
+    <string name="card_playlists_desc">Usa los archivos .m3u de una carpeta (como la carpeta Playlists de la tarjeta) en lugar de las playlists de Lune. Solo lectura: edítalos en un computador. Las playlists propias de Lune se conservan y vuelven al desactivarlo.</string>
+    <string name="card_playlists_folder">Carpeta de playlists</string>
+    <string name="card_playlists_folder_none">Ninguna carpeta seleccionada</string>
+    <string name="card_playlists_empty">No se encontraron playlists .m3u en la carpeta seleccionada</string>
 </resources>

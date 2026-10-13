@@ -629,6 +629,12 @@ fun AddToPlaylistDialog(
     playbackManager: PlaybackManager,
     onDismiss: () -> Unit
 ) {
+    // The card folder's playlists are read only; every way in is hidden, this is
+    // only in case one is missed.
+    if (viewModel.isPlaylistsReadOnly) {
+        LaunchedEffect(Unit) { onDismiss() }
+        return
+    }
     val targetSong = song
     val blurColors = rememberBlurSheetColors(targetSong)
     var showCreateDialog by remember { mutableStateOf(false) }
