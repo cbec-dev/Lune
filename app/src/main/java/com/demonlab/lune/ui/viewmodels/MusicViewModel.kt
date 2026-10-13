@@ -61,7 +61,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshLibrary() {
         viewModelScope.launch {
             isLoading = true
-            val refreshed = musicProvider.refreshLibrary()
+            val refreshed = com.demonlab.lune.tools.LibraryScanner.rescan(getApplication()).await()
             if (refreshed.isNotEmpty()) {
                 allSongs = refreshed
                 if (isPlaylistsReadOnly) awaitLoadPlaylists()

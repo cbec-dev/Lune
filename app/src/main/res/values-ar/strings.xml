@@ -467,4 +467,11 @@
     <string name="card_playlists_folder">مجلد قوائم التشغيل</string>
     <string name="card_playlists_folder_none">لم يتم اختيار مجلد</string>
     <string name="card_playlists_empty">لم يتم العثور على قوائم تشغيل .m3u في المجلد المحدد</string>
+    <string name="music_folder">مجلد الموسيقى</string>
+    <string name="music_folder_none">لم يتم اختيار مجلد</string>
+    <string name="rescan_library_needs_folder">اختر مجلد موسيقى لإعادة فحصه</string>
+    <string name="rescan_library_listing">جارٍ البحث عن ملفات الصوت…</string>
+    <string name="rescan_library_progress">جارٍ الفحص %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">جارٍ البحث عن ملفات الصوت… تم العثور على %1$d</string>
+    <string name="rescan_library_updating">جارٍ تحديث المكتبة… %1$d / %2$d</string>
 </resources>

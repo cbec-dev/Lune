@@ -487,4 +487,11 @@
     <string name="card_playlists_folder">Folder playlist</string>
     <string name="card_playlists_folder_none">Nie wybrano folderu</string>
     <string name="card_playlists_empty">Nie znaleziono playlist .m3u w wybranym folderze</string>
+    <string name="music_folder">Folder z muzyką</string>
+    <string name="music_folder_none">Nie wybrano folderu</string>
+    <string name="rescan_library_needs_folder">Wybierz folder z muzyką, aby go ponownie przeskanować</string>
+    <string name="rescan_library_listing">Szukanie plików audio…</string>
+    <string name="rescan_library_progress">Skanowanie %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">Szukanie plików audio… znaleziono: %1$d</string>
+    <string name="rescan_library_updating">Aktualizowanie biblioteki… %1$d / %2$d</string>
 </resources>

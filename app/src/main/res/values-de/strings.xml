@@ -466,4 +466,11 @@
     <string name="card_playlists_folder">Playlist-Ordner</string>
     <string name="card_playlists_folder_none">Kein Ordner ausgewählt</string>
     <string name="card_playlists_empty">Keine .m3u-Playlists im ausgewählten Ordner gefunden</string>
+    <string name="music_folder">Musikordner</string>
+    <string name="music_folder_none">Kein Ordner ausgewählt</string>
+    <string name="rescan_library_needs_folder">Wähle einen Musikordner, um ihn neu zu scannen</string>
+    <string name="rescan_library_listing">Suche nach Audiodateien…</string>
+    <string name="rescan_library_progress">Scanne %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">Suche nach Audiodateien… %1$d gefunden</string>
+    <string name="rescan_library_updating">Bibliothek wird aktualisiert… %1$d / %2$d</string>
 </resources>

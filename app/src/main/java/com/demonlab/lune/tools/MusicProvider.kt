@@ -18,11 +18,12 @@ import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonToken
 import com.google.gson.stream.JsonWriter
 import android.media.MediaScannerConnection
-import android.os.Environment
+import android.provider.DocumentsContract
+import com.demonlab.lune.tools.playlist.M3uPlaylistParser
 import java.io.File
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 
 class UriTypeAdapter : TypeAdapter<Uri>() {
@@ -95,9 +96,14 @@ class MusicProvider(private val context: Context) {
         return ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
     }
 
-    suspend fun syncSongs(): List<Song> = withContext(Dispatchers.IO) {
+    /**
+     * Re-reads the library from MediaStore. [onProgress] gets (songs done, total)
+     * as it goes, from any thread.
+     */
+    suspend fun syncSongs(onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): List<Song> = withContext(Dispatchers.IO) {
         if (!hasReadPermission()) return@withContext emptyList()
         val songList = mutableListOf<Song>()
+        val hiFiInfo = HiFiInfoCache(context)
 
         val collection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
@@ -154,7 +160,11 @@ class MusicProvider(private val context: Context) {
                 cursor.getColumnIndex(MediaStore.Audio.Media.BITRATE)
             } else -1
 
+            val total = cursor.count
+            onProgress(0, total)
             while (cursor.moveToNext()) {
+                // Not every row: a callback per song would cost more than the song.
+                if (cursor.position % 25 == 0) onProgress(cursor.position, total)
                 val id = cursor.getLong(idColumn)
                 var title = cursor.getString(titleColumn)
                 var artist = cursor.getString(artistColumn)
@@ -216,50 +226,44 @@ class MusicProvider(private val context: Context) {
                 var bitDepth: Int? = null
                 var isHiRes = false
                 if (isHiFiFile && file.exists()) {
-                    try {
-                        val audioFile = org.jaudiotagger.audio.AudioFileIO.read(file)
-                        val header = audioFile.audioHeader
-                        sampleRate = header.sampleRateAsNumber
-                        bitDepth = header.bitsPerSample
-                        if ((sampleRate >= 48000 && bitDepth >= 24) || sampleRate >= 88200 || extension == "dsf" || extension == "dff") {
+                    // Read from the file only when it is new or has changed.
+                    val info = hiFiInfo.get(file)
+                    if (!info.failed) {
+                        sampleRate = info.sampleRate
+                        bitDepth = info.bitDepth
+                        val rate = info.sampleRate ?: 0
+                        val depth = info.bitDepth ?: 0
+                        if ((rate >= 48000 && depth >= 24) || rate >= 88200 || extension == "dsf" || extension == "dff") {
                             isHiRes = true
                         }
 
                         // Extract tags for formats where Android MediaStore does not parse metadata (e.g. WAV, DSF, DFF)
                         // or where MediaStore tags were missing/fallback unknown values
                         if (override == null) {
-                            val tag = audioFile.tag
-                            if (tag != null) {
-                                val tagTitle = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.TITLE) }.getOrNull()?.trim()
-                                val tagArtist = runCatching {
-                                    val a = tag.getFirst(org.jaudiotagger.tag.FieldKey.ARTIST)?.trim()
-                                    if (!a.isNullOrBlank()) a else tag.getFirst(org.jaudiotagger.tag.FieldKey.ALBUM_ARTIST)?.trim()
-                                }.getOrNull()
-                                val tagAlbum = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.ALBUM) }.getOrNull()?.trim()
-                                val tagGenre = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.GENRE) }.getOrNull()?.trim()
-                                val tagTrack = runCatching { tag.getFirst(org.jaudiotagger.tag.FieldKey.TRACK) }.getOrNull()?.trim()
-
-                                if (!tagTitle.isNullOrBlank()) {
-                                    title = CharsetUtils.sanitizeText(tagTitle)
+                            info.title?.let { title = CharsetUtils.sanitizeText(it) }
+                            info.artist?.let {
+                                if (artist.isBlank() || artist.equals("<unknown>", ignoreCase = true) || extension == "wav") {
+                                    artist = CharsetUtils.sanitizeText(it)
                                 }
-                                if (!tagArtist.isNullOrBlank() && (artist.isBlank() || artist.equals("<unknown>", ignoreCase = true) || extension == "wav")) {
-                                    artist = CharsetUtils.sanitizeText(tagArtist)
+                            }
+                            info.album?.let {
+                                if (album.isBlank() || album.equals("<unknown>", ignoreCase = true) || extension == "wav") {
+                                    album = CharsetUtils.sanitizeText(it)
                                 }
-                                if (!tagAlbum.isNullOrBlank() && (album.isBlank() || album.equals("<unknown>", ignoreCase = true) || extension == "wav")) {
-                                    album = CharsetUtils.sanitizeText(tagAlbum)
+                            }
+                            info.genre?.let {
+                                if (genre.isNullOrBlank() || extension == "wav") {
+                                    genre = CharsetUtils.sanitizeText(it)
                                 }
-                                if (!tagGenre.isNullOrBlank() && (genre.isNullOrBlank() || extension == "wav")) {
-                                    genre = CharsetUtils.sanitizeText(tagGenre)
-                                }
-                                if (!tagTrack.isNullOrBlank() && (trackNumber == 0 || extension == "wav")) {
-                                    trackNumber = tagTrack.substringBefore("/").toIntOrNull() ?: trackNumber
+                            }
+                            info.track?.let {
+                                if (trackNumber == 0 || extension == "wav") {
+                                    trackNumber = it.substringBefore("/").toIntOrNull() ?: trackNumber
                                 }
                             }
                         }
-                    } catch (_: Exception) {
-                        if (bitrate != null && bitrate >= 2304000) {
-                            isHiRes = true
-                        }
+                    } else if (bitrate != null && bitrate >= 2304000) {
+                        isHiRes = true
                     }
                 }
 
@@ -278,52 +282,139 @@ class MusicProvider(private val context: Context) {
                 )
             }
         }
+        hiFiInfo.save()
+        onProgress(songList.size, songList.size)
         saveToCache(songList)
         songList
     }
 
-    suspend fun refreshLibrary(): List<Song> = withContext(Dispatchers.IO) {
+    /**
+     * Rescans the picked music folder, and only it: every audio file in it, plus
+     * the known songs in it whose file has gone (scanning a missing path is what
+     * removes it from MediaStore). Without a picked folder nothing is scanned.
+     *
+     * [onProgress] is called with the phase and how far it has got (while listing,
+     * total is unknown and done is the files found so far). It may be called from
+     * any thread.
+     */
+    suspend fun refreshLibrary(onProgress: (phase: ScanPhase, done: Int, total: Int) -> Unit = { _, _, _ -> }): List<Song> = withContext(Dispatchers.IO) {
         if (!hasReadPermission()) return@withContext emptyList()
 
-        val audioExtensions = setOf("mp3", "flac", "wav", "aac", "m4a", "ogg", "opus", "wma", "alac")
+        val treeUri = settingsManager.musicFolderUri?.let { runCatching { Uri.parse(it) }.getOrNull() }
+        val rootDocId = treeUri?.let { runCatching { DocumentsContract.getTreeDocumentId(it) }.getOrNull() }
+        val rootPath = rootDocId?.let { M3uPlaylistParser.treeDocIdToPaths(it)?.second }
+        val update = { done: Int, total: Int -> onProgress(ScanPhase.UPDATING, done, total) }
+        if (treeUri == null || rootDocId == null || rootPath == null) return@withContext syncSongs(update)
 
-        // Collect paths: known songs from cache + common music directories
-        val pathsToScan = mutableSetOf<String>()
-        getCachedSongs().forEach { pathsToScan.add(it.path) }
+        onProgress(ScanPhase.LISTING, 0, 0)
+        val found = listAudioFiles(treeUri, rootDocId, rootPath) { onProgress(ScanPhase.LISTING, it, 0) }
+        val foundSet = found.toHashSet()
+        val gone = getCachedSongs()
+            .map { it.path }
+            .filter { it.startsWith("$rootPath/") && it !in foundSet && !File(it).exists() }
+        val paths = (found + gone).toTypedArray()
 
-        val musicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC)
-        if (musicDir.exists()) pathsToScan.add(musicDir.absolutePath)
+        if (paths.isNotEmpty()) {
+            val scanned = AtomicInteger(0)
+            onProgress(ScanPhase.SCANNING, 0, paths.size)
+            MediaScannerConnection.scanFile(context, paths, null) { _, _ ->
+                onProgress(ScanPhase.SCANNING, scanned.incrementAndGet(), paths.size)
+            }
+            // The scanner answers once per path. Wait for all of them, unless it
+            // goes quiet for a long while (a file it chokes on, say).
+            var last = -1
+            var quietSince = System.currentTimeMillis()
+            while (scanned.get() < paths.size) {
+                val now = scanned.get()
+                if (now != last) {
+                    last = now
+                    quietSince = System.currentTimeMillis()
+                } else if (System.currentTimeMillis() - quietSince > 30_000) {
+                    break
+                }
+                delay(250)
+            }
+        }
 
-        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        if (downloadsDir.exists()) pathsToScan.add(downloadsDir.absolutePath)
+        syncSongs(update)
+    }
 
-        val documentsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS)
-        if (documentsDir.exists()) pathsToScan.add(documentsDir.absolutePath)
+    private val scanExtensions = setOf("mp3", "flac", "wav", "aac", "m4a", "ogg", "opus", "wma", "alac", "dsf", "dff")
 
-        val audioFolderUriStr = settingsManager.musicFolderUri
-        if (!audioFolderUriStr.isNullOrBlank()) {
+    // The audio files under a picked folder, as paths. Hidden entries and folders
+    // with a .nomedia file are skipped, as MediaStore skips them. [onFound] gets
+    // the running count.
+    //
+    // From Android 11 the file system can be listed directly, which is far faster
+    // than the folder's document tree (one provider query per folder, slow on a
+    // big library on a card). Android 10 does not allow that, so it, and any folder
+    // the file system will not list, goes through the document tree, which the app
+    // has permission for on every version.
+    private fun listAudioFiles(treeUri: Uri, rootDocId: String, rootPath: String, onFound: (Int) -> Unit): List<String> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            listAudioFilesDirect(File(rootPath), onFound)?.let { return it }
+        }
+        return listAudioFilesTree(treeUri, rootDocId, rootPath, onFound)
+    }
+
+    private fun listAudioFilesDirect(root: File, onFound: (Int) -> Unit): List<String>? {
+        if (root.listFiles() == null) return null
+        val out = mutableListOf<String>()
+        val pending = ArrayDeque<File>()
+        pending.addLast(root)
+        while (pending.isNotEmpty()) {
+            val children = pending.removeFirst().listFiles() ?: continue
+            if (children.any { it.name == ".nomedia" }) continue
+            for (child in children) {
+                if (child.name.startsWith(".")) continue
+                if (child.isDirectory) {
+                    pending.addLast(child)
+                } else if (child.extension.lowercase() in scanExtensions) {
+                    out.add(child.absolutePath)
+                }
+            }
+            onFound(out.size)
+        }
+        return out
+    }
+
+    private fun listAudioFilesTree(treeUri: Uri, rootDocId: String, rootPath: String, onFound: (Int) -> Unit): List<String> {
+        val projection = arrayOf(
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE
+        )
+        val out = mutableListOf<String>()
+        val pending = ArrayDeque<Pair<String, String>>()
+        pending.addLast(rootDocId to rootPath)
+        while (pending.isNotEmpty()) {
+            val (docId, path) = pending.removeFirst()
+            val files = mutableListOf<String>()
+            val dirs = mutableListOf<Pair<String, String>>()
+            var noMedia = false
             try {
-                val uri = Uri.parse(audioFolderUriStr)
-                val pathSegment = uri.lastPathSegment?.substringAfterLast(":")
-                if (!pathSegment.isNullOrBlank()) {
-                    val customFolder = File(Environment.getExternalStorageDirectory(), pathSegment)
-                    if (customFolder.exists()) pathsToScan.add(customFolder.absolutePath)
+                val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, docId)
+                context.contentResolver.query(childrenUri, projection, null, null, null)?.use { c ->
+                    while (c.moveToNext()) {
+                        val id = c.getString(0) ?: continue
+                        val name = c.getString(1) ?: continue
+                        if (name == ".nomedia") noMedia = true
+                        if (name.startsWith(".")) continue
+                        if (c.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR) {
+                            dirs.add(id to "$path/$name")
+                        } else if (name.substringAfterLast('.', "").lowercase() in scanExtensions) {
+                            files.add("$path/$name")
+                        }
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
+            if (noMedia) continue
+            out.addAll(files)
+            dirs.forEach { pending.addLast(it) }
+            onFound(out.size)
         }
-
-        if (pathsToScan.isNotEmpty()) {
-            val latch = CountDownLatch(1)
-            MediaScannerConnection.scanFile(
-                context,
-                pathsToScan.toTypedArray(),
-                null
-            ) { _, _ -> latch.countDown() }
-            latch.await(60, TimeUnit.SECONDS)
-        }
-
-        syncSongs()
+        return out
     }
 }

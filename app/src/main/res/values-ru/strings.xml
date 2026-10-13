@@ -469,4 +469,11 @@
     <string name="card_playlists_folder">Папка плейлистов</string>
     <string name="card_playlists_folder_none">Папка не выбрана</string>
     <string name="card_playlists_empty">В выбранной папке нет плейлистов .m3u</string>
+    <string name="music_folder">Папка с музыкой</string>
+    <string name="music_folder_none">Папка не выбрана</string>
+    <string name="rescan_library_needs_folder">Выберите папку с музыкой, чтобы пересканировать её</string>
+    <string name="rescan_library_listing">Поиск аудиофайлов…</string>
+    <string name="rescan_library_progress">Сканирование %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">Поиск аудиофайлов… найдено: %1$d</string>
+    <string name="rescan_library_updating">Обновление библиотеки… %1$d / %2$d</string>
 </resources>

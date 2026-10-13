@@ -466,4 +466,11 @@
     <string name="card_playlists_folder">播放列表文件夹</string>
     <string name="card_playlists_folder_none">未选择文件夹</string>
     <string name="card_playlists_empty">所选文件夹中没有 .m3u 播放列表</string>
+    <string name="music_folder">音乐文件夹</string>
+    <string name="music_folder_none">未选择文件夹</string>
+    <string name="rescan_library_needs_folder">请选择音乐文件夹以重新扫描</string>
+    <string name="rescan_library_listing">正在查找音频文件…</string>
+    <string name="rescan_library_progress">正在扫描 %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">正在查找音频文件… 已找到 %1$d 个</string>
+    <string name="rescan_library_updating">正在更新音乐库… %1$d / %2$d</string>
 </resources>

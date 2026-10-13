@@ -465,4 +465,11 @@
     <string name="card_playlists_folder">پوشه لیست‌های پخش</string>
     <string name="card_playlists_folder_none">پوشه‌ای انتخاب نشده</string>
     <string name="card_playlists_empty">هیچ لیست پخش .m3u در پوشه انتخاب‌شده یافت نشد</string>
+    <string name="music_folder">پوشه موسیقی</string>
+    <string name="music_folder_none">پوشه‌ای انتخاب نشده</string>
+    <string name="rescan_library_needs_folder">برای اسکن دوباره، یک پوشه موسیقی انتخاب کنید</string>
+    <string name="rescan_library_listing">در حال جستجوی فایل‌های صوتی…</string>
+    <string name="rescan_library_progress">در حال اسکن %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">در حال جستجوی فایل‌های صوتی… %1$d یافت شد</string>
+    <string name="rescan_library_updating">در حال به‌روزرسانی کتابخانه… %1$d / %2$d</string>
 </resources>

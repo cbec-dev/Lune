@@ -489,4 +489,11 @@
     <string name="card_playlists_folder">Playlists folder</string>
     <string name="card_playlists_folder_none">No folder selected</string>
     <string name="card_playlists_empty">No .m3u playlists found in the selected folder</string>
+    <string name="music_folder">Music folder</string>
+    <string name="music_folder_none">No folder selected</string>
+    <string name="rescan_library_needs_folder">Pick a music folder to rescan it</string>
+    <string name="rescan_library_listing">Looking for audio files…</string>
+    <string name="rescan_library_progress">Scanning %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">Looking for audio files… %1$d found</string>
+    <string name="rescan_library_updating">Updating library… %1$d / %2$d</string>
 </resources>

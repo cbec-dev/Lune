@@ -490,4 +490,11 @@
     <string name="card_playlists_folder">Carpeta de playlists</string>
     <string name="card_playlists_folder_none">Ninguna carpeta seleccionada</string>
     <string name="card_playlists_empty">No se encontraron playlists .m3u en la carpeta seleccionada</string>
+    <string name="music_folder">Carpeta de música</string>
+    <string name="music_folder_none">Ninguna carpeta seleccionada</string>
+    <string name="rescan_library_needs_folder">Elige una carpeta de música para volver a escanearla</string>
+    <string name="rescan_library_listing">Buscando archivos de audio…</string>
+    <string name="rescan_library_progress">Escaneando %1$d / %2$d</string>
+    <string name="rescan_library_listing_found">Buscando archivos de audio… %1$d encontrados</string>
+    <string name="rescan_library_updating">Actualizando biblioteca… %1$d / %2$d</string>
 </resources>

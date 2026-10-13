@@ -41,7 +41,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.widget.Toast
 import kotlinx.coroutines.launch
 import com.demonlab.lune.tools.PlaylistBackupManager
-import com.demonlab.lune.tools.MusicProvider
+import com.demonlab.lune.tools.LibraryScanner
+import com.demonlab.lune.tools.ScanPhase
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.SdCard
 import androidx.compose.ui.Modifier
@@ -119,11 +120,14 @@ fun SettingsScreen(
     var isCinematicEnabled by remember { mutableStateOf(settingsManager.isCinematicPlayerEnabled) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showBackupWarning by remember { mutableStateOf(settingsManager.showBackupWarning) }
-    var isScanningLibrary by remember { mutableStateOf(false) }
+    // The rescan belongs to the app, not this screen: it goes on after Settings
+    // is closed, and is shown again when it is reopened.
+    val scanState = LibraryScanner.state
+    val isScanningLibrary = scanState.running
+    var musicFolderUri by remember { mutableStateOf(settingsManager.musicFolderUri) }
     val currentLanguage = settingsManager.language
     val scope = rememberCoroutineScope()
     val backupManager = remember { PlaylistBackupManager(context) }
-    val musicProvider = remember { MusicProvider(context) }
     var autoSyncBackupUri by remember { mutableStateOf(settingsManager.autoSyncBackupUri) }
     var isAutoSyncEnabled by remember { mutableStateOf(settingsManager.isAutoSyncBackupEnabled) }
 
@@ -182,6 +186,25 @@ fun SettingsScreen(
             }
         }
         enableCardPlaylistsAfterPick = false
+    }
+
+    // The folder the library is rescanned from. Picked at onboarding, or here if
+    // that step was skipped or the music has moved.
+    val musicFolderLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                )
+                settingsManager.musicFolderUri = uri.toString()
+                musicFolderUri = uri.toString()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -368,33 +391,58 @@ fun SettingsScreen(
                     )
 
                     SettingsPreferenceItem(
+                        headlineText = stringResource(R.string.music_folder),
+                        supportingText = musicFolderUri
+                            ?.let { runCatching { android.provider.DocumentsContract.getTreeDocumentId(android.net.Uri.parse(it)) }.getOrNull() }
+                            ?.replace(":", "/")?.removePrefix("primary/")
+                            ?: stringResource(R.string.music_folder_none),
+                        icon = Icons.Default.Folder,
+                        position = SectionPosition.MIDDLE,
+                        onClick = { if (!isScanningLibrary) musicFolderLauncher.launch(null) }
+                    )
+
+                    // Only the picked folder is rescanned, so there is nothing to
+                    // rescan until one is picked.
+                    val hasMusicFolder = !musicFolderUri.isNullOrBlank()
+                    SettingsPreferenceItem(
                         headlineText = stringResource(R.string.rescan_library),
-                        supportingText = stringResource(R.string.rescan_library_desc),
+                        supportingText = when {
+                            !hasMusicFolder -> stringResource(R.string.rescan_library_needs_folder)
+                            isScanningLibrary && scanState.phase == ScanPhase.LISTING && scanState.done > 0 ->
+                                stringResource(R.string.rescan_library_listing_found, scanState.done)
+                            isScanningLibrary && scanState.phase == ScanPhase.LISTING -> stringResource(R.string.rescan_library_listing)
+                            isScanningLibrary && scanState.phase == ScanPhase.SCANNING ->
+                                stringResource(R.string.rescan_library_progress, scanState.done, scanState.total)
+                            isScanningLibrary -> stringResource(R.string.rescan_library_updating, scanState.done, scanState.total)
+                            else -> stringResource(R.string.rescan_library_desc)
+                        },
                         icon = Icons.Default.Sync,
                         position = SectionPosition.MIDDLE,
                         trailingContent = if (isScanningLibrary) {
                             {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    strokeWidth = 2.dp,
-                                    color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        } else null,
-                        onClick = {
-                            if (!isScanningLibrary) {
-                                scope.launch {
-                                    isScanningLibrary = true
-                                    val songs = musicProvider.refreshLibrary()
-                                    isScanningLibrary = false
-                                    Toast.makeText(
-                                        context,
-                                        context.getString(R.string.rescan_library_success, songs.size),
-                                        Toast.LENGTH_LONG
-                                    ).show()
+                                val scanned = scanState.done
+                                val total = scanState.total
+                                if (total > 0) {
+                                    CircularProgressIndicator(
+                                        progress = { scanned.toFloat() / total },
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                                    )
+                                } else {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        strokeWidth = 2.dp,
+                                        color = if (hasBlurBackground) Color.White else MaterialTheme.colorScheme.primary
+                                    )
                                 }
                             }
-                        }
+                        } else null,
+                        onClick = if (hasMusicFolder) {
+                            {
+                                LibraryScanner.rescan(context, announceResult = true)
+                            }
+                        } else null
                     )
 
                     SettingsPreferenceItem(
