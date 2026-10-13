@@ -1837,12 +1837,12 @@ class MusicService : MediaLibraryService() {
 
         val playPauseAction = if (isPlaying) {
             NotificationCompat.Action(
-                android.R.drawable.ic_media_pause, "Pause",
+                R.drawable.ic_widget_pause, "Pause",
                 getServicePendingIntent(ACTION_PAUSE)
             )
         } else {
             NotificationCompat.Action(
-                android.R.drawable.ic_media_play, "Play",
+                R.drawable.ic_widget_play, "Play",
                 getServicePendingIntent(ACTION_PLAY)
             )
         }
@@ -1873,9 +1873,9 @@ class MusicService : MediaLibraryService() {
             .setDeleteIntent(getServicePendingIntent(ACTION_DISMISS))
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(android.R.drawable.ic_media_previous, "Previous", getServicePendingIntent(ACTION_PREVIOUS))
+            .addAction(R.drawable.ic_widget_prev, "Previous", getServicePendingIntent(ACTION_PREVIOUS))
             .addAction(playPauseAction)
-            .addAction(android.R.drawable.ic_media_next, "Next", getServicePendingIntent(ACTION_NEXT))
+            .addAction(R.drawable.ic_widget_next, "Next", getServicePendingIntent(ACTION_NEXT))
             .addAction(shuffleAction)
             .addAction(favoriteAction)
 
