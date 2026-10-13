@@ -1184,7 +1184,11 @@ fun PlayerOptionsBottomSheet(
     onDismiss: () -> Unit,
     onAddToPlaylistClick: () -> Unit = {},
     onShowVisualizerSettings: () -> Unit,
-    onShowLyrics: () -> Unit = {}
+    onShowLyrics: () -> Unit = {},
+    // Where the playing track can be opened from; null hides the button.
+    onGoToArtist: (() -> Unit)? = null,
+    onGoToAlbum: (() -> Unit)? = null,
+    onGoToPlaylist: (() -> Unit)? = null
 ) {
     val currentSong = playbackManager.currentSong
     val blurColors = rememberBlurSheetColors(currentSong)
@@ -1239,9 +1243,12 @@ fun PlayerOptionsBottomSheet(
                 else -> Icons.AutoMirrored.Filled.VolumeUp
             }
 
+            // Scrolls on a short screen (a DAP's), where the sheet can be taller
+            // than the screen.
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
                     .navigationBarsPadding()
                     .padding(bottom = 24.dp)
             ) {
@@ -1463,6 +1470,39 @@ fun PlayerOptionsBottomSheet(
                                 }
                             }
                         )
+                    }
+                }
+
+                // Go to the playing track's artist, album, or the playlist it plays from
+                val goTo = listOfNotNull(
+                    onGoToArtist?.let { Triple(Icons.Default.Person, R.string.option_go_artist, it) },
+                    onGoToAlbum?.let { Triple(Icons.Default.Album, R.string.option_go_album, it) },
+                    onGoToPlaylist?.let { Triple(Icons.AutoMirrored.Filled.QueueMusic, R.string.option_go_playlist, it) }
+                )
+                if (goTo.isNotEmpty()) {
+                    // Each button as wide as one of the five above, the group centred,
+                    // so the spacing matches that row however many there are.
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 6.dp)
+                    ) {
+                    val slotWidth = maxWidth / 5
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        goTo.forEach { (icon, label, action) ->
+                            Box(Modifier.width(slotWidth), contentAlignment = Alignment.Center) {
+                                OptionButton(
+                                    icon = icon,
+                                    label = stringResource(label),
+                                    active = false,
+                                    onClick = action
+                                )
+                            }
+                        }
+                    }
                     }
                 }
             }

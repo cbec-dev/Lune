@@ -2678,6 +2678,34 @@ fun MainScreen(
                         isAlbumView = false
                         onIsPlayerExpandedChange(false)
                         onSelectedFolderChange("ARTISTS")
+                    },
+                    onAlbumClick = { albumName ->
+                        // As the Albums tab shows it; built from the library if the
+                        // album is in a hidden folder.
+                        val album = albumsList.find { it.name == albumName } ?: run {
+                            val albumSongs = rawAllSongs.filter { it.album == albumName }
+                            Album(
+                                id = albumName.hashCode().toLong(),
+                                name = albumName,
+                                artist = albumSongs.firstOrNull()?.artist ?: "",
+                                albumArtUri = albumSongs.firstOrNull()?.albumArtUri,
+                                coverUrl = albumSongs.firstOrNull()?.coverUrl,
+                                songs = albumSongs.sortedBy { it.title }
+                            )
+                        }
+                        selectedPlaylist = null
+                        selectedAlbum = album
+                        isAlbumView = true
+                        onIsPlayerExpandedChange(false)
+                        onSelectedFolderChange("ALBUMS")
+                    },
+                    onPlaylistClick = { playlistId ->
+                        musicViewModel.playlists.find { it.id == playlistId }?.let { playlist ->
+                            selectedAlbum = null
+                            selectedPlaylist = playlist
+                            onIsPlayerExpandedChange(false)
+                            onSelectedFolderChange("PLAYLISTS")
+                        }
                     }
                 )
             }

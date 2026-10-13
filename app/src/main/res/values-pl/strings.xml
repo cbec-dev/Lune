@@ -494,4 +494,7 @@
     <string name="rescan_library_progress">Skanowanie %1$d / %2$d</string>
     <string name="rescan_library_listing_found">Szukanie plików audio… znaleziono: %1$d</string>
     <string name="rescan_library_updating">Aktualizowanie biblioteki… %1$d / %2$d</string>
+    <string name="option_go_artist">Wykonawca</string>
+    <string name="option_go_album">Album</string>
+    <string name="option_go_playlist">Playlista</string>
 </resources>

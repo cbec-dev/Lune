@@ -472,4 +472,7 @@
     <string name="rescan_library_progress">در حال اسکن %1$d / %2$d</string>
     <string name="rescan_library_listing_found">در حال جستجوی فایل‌های صوتی… %1$d یافت شد</string>
     <string name="rescan_library_updating">در حال به‌روزرسانی کتابخانه… %1$d / %2$d</string>
+    <string name="option_go_artist">هنرمند</string>
+    <string name="option_go_album">آلبوم</string>
+    <string name="option_go_playlist">لیست پخش</string>
 </resources>

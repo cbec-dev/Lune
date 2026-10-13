@@ -474,4 +474,7 @@
     <string name="rescan_library_progress">جارٍ الفحص %1$d / %2$d</string>
     <string name="rescan_library_listing_found">جارٍ البحث عن ملفات الصوت… تم العثور على %1$d</string>
     <string name="rescan_library_updating">جارٍ تحديث المكتبة… %1$d / %2$d</string>
+    <string name="option_go_artist">الفنان</string>
+    <string name="option_go_album">الألبوم</string>
+    <string name="option_go_playlist">قائمة التشغيل</string>
 </resources>

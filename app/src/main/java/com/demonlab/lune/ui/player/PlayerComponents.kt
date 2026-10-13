@@ -745,7 +745,9 @@ fun FullPlayer(
     controlsColorPalette: Int,
     onShowLyrics: () -> Unit,
     onRequestAudioPermission: () -> Unit,
-    onArtistClick: ((String) -> Unit)? = null
+    onArtistClick: ((String) -> Unit)? = null,
+    onAlbumClick: ((String) -> Unit)? = null,
+    onPlaylistClick: ((Long) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager.getInstance(context) }
@@ -2097,7 +2099,18 @@ fun FullPlayer(
                 onShowLyrics = {
                     showOptionsSheet = false
                     onShowLyrics()
-                }
+                },
+                onGoToArtist = onArtistClick?.let { open ->
+                    { showOptionsSheet = false; open(song.artist) }
+                },
+                onGoToAlbum = onAlbumClick?.let { open ->
+                    { showOptionsSheet = false; open(song.album) }
+                },
+                onGoToPlaylist = playbackManager.activePlaylistId
+                    ?.takeIf { playbackManager.activeCategory == "PLAYLISTS" }
+                    ?.let { playlistId ->
+                        onPlaylistClick?.let { open -> { showOptionsSheet = false; open(playlistId) } }
+                    }
             )
         }
 
