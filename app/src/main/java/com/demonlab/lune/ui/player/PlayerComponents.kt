@@ -1384,9 +1384,12 @@ fun FullPlayer(
                             onPrevious = handlePrevious
                         )
                 } else {
+                    // The biggest square the space left over by the controls allows:
+                    // the full width on a tall phone, smaller on a short screen (a DAP)
+                    // so that the options row below the controls still fits.
                     Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
+                        .weight(1f, fill = false)
+                        .aspectRatio(1f, matchHeightConstraintsFirst = true)
                         .scale(coverScale)
                         .songSwipeGestures(
                             enabled = isGesturesEnabled,
@@ -2054,7 +2057,15 @@ fun FullPlayer(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    coverSection()
+                    // Measured after the controls, so the cover gets what they leave.
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        coverSection()
+                    }
                     controlsSection()
                 }
             }
