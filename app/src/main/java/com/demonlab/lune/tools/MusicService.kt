@@ -65,6 +65,18 @@ class MusicService : MediaLibraryService() {
     private var lunePlayerAdapter: LuneAudioPlayerAdapter? = null
     private var mediaPlayer: MediaPlayer? = null
     private var secondaryPlayer: MediaPlayer? = null
+
+    // Whether mediaPlayer has finished preparing. Until then MediaPlayer refuses
+    // getDuration(), seekTo() and the like with error -38 -- which, reported to
+    // the error listener, read as a broken file and skipped to the next track.
+    // The progress bar asks for the duration every 500 ms, so on a slow card
+    // that was most track changes.
+    @Volatile
+    private var isPlayerPrepared = false
+
+    // MediaPlayer's "called in the wrong state" (-38): a call made too early, not
+    // a file that cannot be played.
+    private fun isWrongStateError(what: Int, extra: Int) = what == -38 || extra == -38
     private var isCrossfading = false
     private var mediaSession: MediaLibrarySession? = null
     private val binder = MusicBinder()
@@ -843,6 +855,7 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
         secondaryPlayer = null
+        isPlayerPrepared = false
 
         val player = MediaPlayer()
         configurePlayer(player)
@@ -863,6 +876,7 @@ class MusicService : MediaLibraryService() {
                 val pm = PlaybackManager.getInstance(applicationContext)
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
+                    isPlayerPrepared = true
                     try {
                         acquireWakeLock()
                         val sessionId = audioSessionId
@@ -899,7 +913,10 @@ class MusicService : MediaLibraryService() {
                 }
                 setOnErrorListener { _, what, extra ->
                     Log.e("MusicService", "MediaPlayer error in playSong: what=$what, extra=$extra")
-                    if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                    if (isWrongStateError(what, extra)) {
+                        // Not the file's fault: do not skip it.
+                        true
+                    } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
                         try {
                             player.release()
                         } catch (_: Exception) {}
@@ -943,7 +960,7 @@ class MusicService : MediaLibraryService() {
             val mp = mediaPlayer
             val fadeMs = if (settingsManager.isCrossfadeCustomDuration)
                 settingsManager.crossfadeDurationSeconds * 1000L else 12000L
-            val remaining = if (mp != null) (mp.duration - mp.currentPosition).toLong() else fadeMs
+            val remaining = if (mp != null && isPlayerPrepared) (mp.duration - mp.currentPosition).toLong() else fadeMs
             performCrossfade(song, if (remaining in 1..fadeMs) remaining else fadeMs)
         }
     }
@@ -1099,6 +1116,7 @@ class MusicService : MediaLibraryService() {
                 val oldPlayer = mediaPlayer
                 mediaPlayer = secondaryPlayer
                 secondaryPlayer = null
+                isPlayerPrepared = true // prepared before the crossfade began
 
                 equalizer?.release()
                 bassBoost?.release()
@@ -1322,8 +1340,8 @@ class MusicService : MediaLibraryService() {
 
     fun hasPlayer(): Boolean = mediaPlayer != null
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true || secondaryPlayer?.isPlaying == true
-    fun currentPosition(): Int = mediaPlayer?.currentPosition ?: 0
-    fun duration(): Int = mediaPlayer?.duration ?: 0
+    fun currentPosition(): Int = if (isPlayerPrepared) mediaPlayer?.currentPosition ?: 0 else 0
+    fun duration(): Int = if (isPlayerPrepared) mediaPlayer?.duration ?: 0 else 0
     fun getAudioSessionId(): Int = mediaPlayer?.audioSessionId ?: 0
 
     fun setLooping(looping: Boolean) {
@@ -1359,6 +1377,7 @@ class MusicService : MediaLibraryService() {
     }
 
     fun seekTo(pos: Int) {
+        if (!isPlayerPrepared) return
         mediaPlayer?.seekTo(pos)
         updatePlaybackState()
         updateWidget()
@@ -1426,6 +1445,7 @@ class MusicService : MediaLibraryService() {
         secondaryPlayer?.setOnErrorListener(null)
         secondaryPlayer?.release()
         secondaryPlayer = null
+        isPlayerPrepared = false
 
         val player = MediaPlayer()
         configurePlayer(player)
@@ -1447,6 +1467,7 @@ class MusicService : MediaLibraryService() {
                 val pm = PlaybackManager.getInstance(applicationContext)
                 isLooping = pm.shouldLoopCurrentSong()
                 setOnPreparedListener {
+                    isPlayerPrepared = true
                     try {
                         val sessionId = audioSessionId
                         setupAudioFx(sessionId, false)
@@ -1490,7 +1511,10 @@ class MusicService : MediaLibraryService() {
                 }
                 setOnErrorListener { _, what, extra ->
                     Log.e("MusicService", "MediaPlayer error in restorePlayback: what=$what, extra=$extra")
-                    if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
+                    if (isWrongStateError(what, extra)) {
+                        // Not the file's fault: do not skip it.
+                        true
+                    } else if (what == MediaPlayer.MEDIA_ERROR_SERVER_DIED) {
                         try {
                             player.release()
                         } catch (_: Exception) {}
